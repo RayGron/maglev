@@ -2,11 +2,43 @@
   "defaultBackendMode": "openai_compat",
   "openaiCompat": {
     "apiBaseUrl": "http://172.20.176.1:1234/v1",
+    "chatApiUrl": "http://172.20.176.1:1234/api/v1/chat",
     "model": "qwen/qwen3.5-35b-a3b",
+    "chatModel": "qwen/qwen3.5-35b-a3b",
     "requestTimeoutMs": 30000,
+    "structuredRequestTimeoutMs": 90000,
+    "chatResponseProfile": {
+      "temperature": 0.8,
+      "maxTokens": 128,
+      "reasoningEffort": "medium"
+    },
     "jsonResponseProfile": {
       "temperature": 0.2,
-      "maxTokens": [512, 1024]
+      "maxTokens": [512, 1024],
+      "reasoningEffort": "high"
+    },
+    "promptProfiles": {
+      "chat": {
+        "systemPrompt": "You are the terminal chat mode of a coding CLI. Reply directly to the user message. Do not propose a plan unless the user explicitly asks to execute a task. Keep the answer short, natural, and terminal-friendly."
+      },
+      "taskPlan": {
+        "systemPrompt": "Return JSON only. Schema: {\"summary\":string,\"steps\":[{\"id\":string,\"title\":string,\"kind\":string,\"requiresApproval\":boolean}]}. No markdown."
+      },
+      "edit": {
+        "systemPrompt": "Return JSON only. Schema: [{\"path\":string,\"content\":string,\"summary\":string}]. Prefer the smallest possible set of edits. Do not create extra files unless the user explicitly asks for them. No markdown fences."
+      },
+      "commit": {
+        "systemPrompt": "Return JSON only. Schema: {\"title\":string,\"body\":string|null}. Keep it short and conventional."
+      },
+      "deploy": {
+        "systemPrompt": "Return JSON only. Schema: {\"host\":string,\"repoPath\":string,\"branch\":string,\"restartCommand\":string|null}. Extract the target host from the instruction if present, otherwise keep the current repository path and branch."
+      },
+      "status": {
+        "systemPrompt": "Return JSON only. Schema: {\"message\":string}. The message must be short and terminal-friendly."
+      },
+      "repair": {
+        "systemPrompt": "You repair malformed model output into valid JSON. Return JSON only."
+      }
     }
   },
   "secureGateway": {

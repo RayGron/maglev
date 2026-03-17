@@ -1,14 +1,14 @@
 # maglev
 
-Rust CLI repository for Maglev.
+C++ CLI repository for Maglev.
 
 This repository contains the standalone CLI agent that runs locally on the user's machine and executes filesystem, shell, git, SSH, and deploy actions from that machine.
 
 ## Structure
 
-- `src/`
+- `cpp/`
 - `config/model-endpoints.json`
-- `scripts/`
+- `tools/bin/`
 - `.vscode/`
 
 ## Build
@@ -22,17 +22,34 @@ Build outputs are split by target platform:
 
 Build entrypoints:
 
-- Linux x64 debug: `./scripts/build-linux.sh debug`
-- Linux x64 release: `./scripts/build-linux.sh release`
-- Windows x64 debug: `cmd.exe /C scripts\\build-windows.cmd debug`
-- Windows x64 release: `cmd.exe /C scripts\\build-windows.cmd release`
+- Linux x64 debug: `cmake --preset linux-x64-debug && cmake --build --preset linux-x64-debug`
+- Linux x64 release: `cmake --preset linux-x64-release && cmake --build --preset linux-x64-release`
+- Windows x64 debug: `cmake --preset windows-x64-debug && cmake --build --preset windows-x64-debug`
+- Windows x64 release: `cmake --preset windows-x64-release && cmake --build --preset windows-x64-release`
+
+Build toolchain:
+
+- `CMake`
+- `vcpkg`
+- Linux: prefers `clang`, falls back to `gcc/g++` if `clang` is not installed
+- Windows: `MSVC`
+
+Dependency resolution:
+
+- platform dependencies are installed automatically through `vcpkg` during configure/build
+- VS Code is configured to run CMake automatically on open, so `vcpkg_installed` and `compile_commands.json` are generated before IntelliSense needs them
+
+Linux note:
+
+- the repo includes local wrapper tools in `tools/bin` for `zip`, `unzip`, and `pkg-config`
+- they are used by the Linux build flow so the project can still build in a constrained environment where those tools are missing from the system package manager
 
 ## File Context
 
 The CLI can attach local files to the model context.
 
 - Non-interactive:
-  - `cargo run -- --file README.md "summarize the attached file"`
+  - `target/linux-x64/debug/maglev --file README.md "summarize the attached file"`
 - Interactive:
   - start the CLI without a task
   - enter `/file path/to/file`
@@ -51,36 +68,61 @@ Available commands:
 - `/clear-files`
 - `/status`
 - `/task <text>`
+- `/plan`
+- `/apply`
+- `/checks`
+- `/commit`
+- `/push`
+- `/deploy`
 - `/help`
 - `/exit`
 
-Any non-command input is treated as a task and executed with the currently attached files.
+Interactive behavior:
+
+- non-command input is routed by heuristic intent detection into `chat` or `agent task`
+- `/task <text>` explicitly prepares or runs an agent task
+- prepared agent tasks can then be stepped through with `/plan`, `/apply`, `/checks`, `/commit`, `/push`, `/deploy`
+- requests like “show uncommitted changes” are handled locally through deterministic runtime logic instead of asking the model to guess git state
+- step failures keep the interactive session alive and are stored in the active run as `last error`
+
+## CLI Flags
+
+Supported flags:
+
+- `--task "<text>"`
+- `--file <path>` (repeatable)
+- `--auto-approve`
+- `--config <path>`
+- `--backend <openai_compat|secure_gateway>`
+- `--model <model-id>`
+
+Examples:
+
+- `target/linux-x64/debug/maglev --task "Кто ты?"`
+- `target/linux-x64/debug/maglev --config config/model-endpoints.json --backend openai_compat --model qwen/qwen3.5-35b-a3b --task "Какая модель сейчас активна?"`
+- `target/linux-x64/debug/maglev --file README.md --task "summarize the attached file"`
+
+## Transcript Logs
+
+Each process writes a local transcript/audit log in JSONL format.
+
+- default directory: `.maglev/transcripts/`
+- entries include process start, session commands, task plans, approvals, edit review, commit/deploy proposals, commit hash, deploy results, and recorded errors
 
 ## VS Code
 
-Workspace tasks and launch configurations in [.vscode](/mnt/e/dev/Repos/maglev/.vscode) are CLI-only:
+Workspace tasks and launch configurations in [`.vscode`](./.vscode) are CLI-only:
 
 - `Build: Linux x64 Debug`
 - `Build: Linux x64 Release`
 - `Build: Windows x64 Debug`
 - `Build: Windows x64 Release`
-- `Linux x64 Debug`
-- `Linux x64 Release`
-- `Linux x64 Build Matrix`
-- `Windows x64 Debug`
-- `Windows x64 Release`
-- `Windows x64 Build Matrix`
 - `Build Matrix`
 
 Recommended debug launches:
 
-- `Build: Linux x64 Debug`
-- `Build: Linux x64 Release`
-- `Build: Windows x64 Debug`
-- `Build: Windows x64 Release`
-- `Debug: Windows x64`
-- `Build Matrix`
 - `Debug: Linux x64`
+- `Debug: Windows x64`
 
 Each debug launch now uses VS Code variables from `launch.json`:
 
@@ -92,9 +134,9 @@ Runtime prompt behavior:
 - `Task`: VS Code asks only for the mode, then the CLI asks for the task in the terminal
 - `File Task`: VS Code asks only for the mode, then the CLI asks for the task and file path in the terminal
 
-One-click builds from the `Run and Debug` dropdown are provided through `node-terminal` launch entries. These are separate from task execution and are intended as the most reliable UI path in a WSL workspace.
+Build-only entries are intentionally kept out of the `Run and Debug` dropdown. Use `Tasks: Run Task` for builds and keep the debug list limited to actual run/debug profiles.
 
-`Debug: Windows x64` is also provided in the `Run and Debug` dropdown for WSL convenience, but in a WSL window it is a Windows run entry, not a true `cppvsdbg` step debugger. True Windows-native debugging still belongs in [launch.windows.local.json](/mnt/e/dev/Repos/maglev/.vscode/launch.windows.local.json) from a local Windows VS Code session.
+`Debug: Windows x64` is also provided in the `Run and Debug` dropdown for WSL convenience, but in a WSL window it is a Windows run entry, not a true `cppvsdbg` step debugger. True Windows-native debugging still belongs in [`launch.windows.local.json`](./.vscode/launch.windows.local.json) from a local Windows VS Code session.
 
 Important:
 
@@ -105,9 +147,27 @@ Important:
 ## WSL And Windows Debugging
 
 - `Build: Windows x64 Debug` and `Build: Windows x64 Release` work from WSL
-- `Windows x64 Debug` and `Windows x64 Release` are shortcut tasks for one-click UI execution
-- `Windows x64 Build Matrix` runs both Windows builds sequentially
-- the main [launch.json](/mnt/e/dev/Repos/maglev/.vscode/launch.json) contains only Linux debugging, because `cppvsdbg` is a Windows-local debugger and is not available inside a WSL remote window
-- for local Windows debugging, use [launch.windows.local.json](/mnt/e/dev/Repos/maglev/.vscode/launch.windows.local.json) as the template for a Windows-local `launch.json`
+- `Build Matrix` runs all configured builds sequentially
+- the main [`launch.json`](./.vscode/launch.json) contains only Linux debugging, because `cppvsdbg` is a Windows-local debugger and is not available inside a WSL remote window
+- for local Windows debugging, use [`launch.windows.local.json`](./.vscode/launch.windows.local.json) as the template for a Windows-local `launch.json`
+
+## Portability
+
+The repository build configuration does not hardcode machine-specific filesystem paths.
+
+- `CMakePresets.json` resolves `vcpkg` through `VCPKG_ROOT`, `PATH`, or a sibling checkout via [`cmake/vcpkg-toolchain.cmake`](./cmake/vcpkg-toolchain.cmake)
+- builds go directly through `cmake --preset` and `cmake --build --preset`
+- WSL-to-Windows flows require `MAGLEV_WINDOWS_CMD` or `cmd.exe` in `PATH`
+
+Expected environment:
+
+- `cmake` available in `PATH`
+- `VCPKG_ROOT` set, or a `vcpkg` checkout placed next to the repository, or `vcpkg` available in `PATH`
+- for WSL-driven Windows builds: `MAGLEV_WINDOWS_CMD` set to a valid `cmd.exe` path, or `cmd.exe` available in `PATH`
 
 All launch profiles use the real model settings from `config/model-endpoints.json`.
+
+## Current Migration Status
+
+- implementation: `C++`
+- working paths: `mock`, `openai_compat`, `secure_gateway`

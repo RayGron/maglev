@@ -15,40 +15,10 @@
   ],
   "configurations": [
     {
-      "name": "Build: Linux x64 Debug",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "bash -lc 'cd \"${workspaceFolder}\" && ./scripts/build-linux.sh debug'"
-    },
-    {
-      "name": "Build: Linux x64 Release",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "bash -lc 'cd \"${workspaceFolder}\" && ./scripts/build-linux.sh release'"
-    },
-    {
-      "name": "Build: Windows x64 Debug",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "bash -lc 'cd \"${workspaceFolder}\" && /mnt/c/Windows/System32/cmd.exe /C scripts\\\\build-windows.cmd debug'"
-    },
-    {
-      "name": "Build: Windows x64 Release",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "bash -lc 'cd \"${workspaceFolder}\" && /mnt/c/Windows/System32/cmd.exe /C scripts\\\\build-windows.cmd release'"
-    },
-    {
       "name": "Debug: Windows x64",
       "type": "node-terminal",
       "request": "launch",
-      "command": "bash -lc 'cd \"${workspaceFolder}\" && /mnt/c/Windows/System32/cmd.exe /C scripts\\\\build-windows.cmd debug && /mnt/c/Windows/System32/cmd.exe /C target\\\\windows-x64\\\\debug\\\\maglev.exe'"
-    },
-    {
-      "name": "Build Matrix",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "bash -lc 'cd \"${workspaceFolder}\" && ./scripts/build-linux.sh debug && ./scripts/build-linux.sh release && /mnt/c/Windows/System32/cmd.exe /C scripts\\\\build-windows.cmd debug && /mnt/c/Windows/System32/cmd.exe /C scripts\\\\build-windows.cmd release'"
+      "command": "bash -lc 'cd \"${workspaceFolder}\" && \"${MAGLEV_WINDOWS_CMD:-cmd.exe}\" /C \"if exist target\\windows-x64\\debug\\CMakeCache.txt del /Q target\\windows-x64\\debug\\CMakeCache.txt >nul 2>nul & if exist target\\windows-x64\\debug\\CMakeFiles rmdir /S /Q target\\windows-x64\\debug\\CMakeFiles >nul 2>nul & cmake --preset windows-x64-debug && cmake --build --preset windows-x64-debug && target\\windows-x64\\debug\\maglev.exe\"'"
     },
     {
       "name": "Debug: Linux x64",
@@ -64,24 +34,6 @@
         "AI_CVSC_RUNTIME_CONFIG_PATH": "${workspaceFolder}/config/model-endpoints.json",
         "MAGLEV_DEBUG_MODE": "${input:maglevDebugMode}"
       }
-    }
-  ],
-  "compounds": [
-    {
-      "name": "Build: Linux x64",
-      "configurations": [
-        "Build: Linux x64 Debug",
-        "Build: Linux x64 Release"
-      ],
-      "stopAll": true
-    },
-    {
-      "name": "Build: Windows x64",
-      "configurations": [
-        "Build: Windows x64 Debug",
-        "Build: Windows x64 Release"
-      ],
-      "stopAll": true
     }
   ]
 }

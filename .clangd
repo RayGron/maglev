@@ -1,0 +1,15 @@
+CompileFlags:
+  CompilationDatabase: None
+  Add:
+    - -std=c++20
+    - -Icpp/include
+    - -Itarget/linux-x64/debug/vcpkg_installed/x64-linux/include
+    - -Itarget/linux-x64/release/vcpkg_installed/x64-linux/include
+    - -Itarget/windows-x64/debug/vcpkg_installed/x64-windows/include
+    - -Itarget/windows-x64/release/vcpkg_installed/x64-windows/include
+---
+If:
+  PathMatch: .*\.h
+CompileFlags:
+  Add:
+    - -xc++-header

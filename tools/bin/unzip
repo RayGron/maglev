@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+
+import pathlib
+import sys
+import zipfile
+
+
+def main(argv: list[str]) -> int:
+    output_dir = pathlib.Path(".")
+    archive_path: str | None = None
+    members: list[str] = []
+
+    index = 1
+    while index < len(argv):
+        argument = argv[index]
+        if argument == "-d":
+            index += 1
+            if index >= len(argv):
+                print("unzip: missing argument for -d", file=sys.stderr)
+                return 2
+            output_dir = pathlib.Path(argv[index])
+        elif argument.startswith("-"):
+            pass
+        elif archive_path is None:
+            archive_path = argument
+        else:
+            members.append(argument)
+        index += 1
+
+    if archive_path is None:
+        print("unzip: missing archive path", file=sys.stderr)
+        return 2
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(archive_path, "r") as archive:
+        if members:
+            for member in members:
+                archive.extract(member, output_dir)
+        else:
+            archive.extractall(output_dir)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

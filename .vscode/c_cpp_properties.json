@@ -1,0 +1,52 @@
+{
+    "version": 4,
+    "configurations": [
+        {
+            "name": "Linux x64",
+            "compilerPath": "/usr/bin/g++",
+            "compileCommands": "${workspaceFolder}/target/linux-x64/debug/compile_commands.json",
+            "includePath": [
+                "${workspaceFolder}/cpp/include",
+                "${workspaceFolder}/target/linux-x64/debug/vcpkg_installed/x64-linux/include",
+                "${workspaceFolder}/target/linux-x64/release/vcpkg_installed/x64-linux/include"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/cpp/include",
+                    "${workspaceFolder}/target/linux-x64/debug/vcpkg_installed/x64-linux/include",
+                    "${workspaceFolder}/target/linux-x64/release/vcpkg_installed/x64-linux/include"
+                ]
+            },
+            "cppStandard": "c++20",
+            "intelliSenseMode": "linux-gcc-x64"
+        },
+        {
+            "name": "Windows x64",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "compilerPath": "cl.exe",
+            "includePath": [
+                "${workspaceFolder}/cpp/include",
+                "${workspaceFolder}/target/windows-x64/debug/vcpkg_installed/x64-windows/include",
+                "${workspaceFolder}/target/windows-x64/release/vcpkg_installed/x64-windows/include"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/cpp/include",
+                    "${workspaceFolder}/target/windows-x64/debug/vcpkg_installed/x64-windows/include",
+                    "${workspaceFolder}/target/windows-x64/release/vcpkg_installed/x64-windows/include"
+                ]
+            },
+            "cppStandard": "c++20",
+            "intelliSenseMode": "windows-msvc-x64"
+        }
+    ],
+    "env": {
+        "maglevCommonIncludes": [
+            "${workspaceFolder}/cpp/include",
+            "${workspaceFolder}/target/linux-x64/debug/vcpkg_installed/x64-linux/include",
+            "${workspaceFolder}/target/linux-x64/release/vcpkg_installed/x64-linux/include",
+            "${workspaceFolder}/target/windows-x64/debug/vcpkg_installed/x64-windows/include",
+            "${workspaceFolder}/target/windows-x64/release/vcpkg_installed/x64-windows/include"
+        ]
+    }
+}

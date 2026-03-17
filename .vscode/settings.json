@@ -2,27 +2,45 @@
   "editor.formatOnSave": true,
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
-  "rust-analyzer.linkedProjects": [
-    "Cargo.toml"
+  "files.associations": {
+    "*.h": "cpp"
+  },
+  "cmake.configureOnOpen": true,
+  "cmake.ignoreCMakeListsMissing": false,
+  "cmake.useCMakePresets": "always",
+  "cmake.defaultConfigurePreset": "linux-x64-debug",
+  "cmake.defaultBuildPreset": "linux-x64-debug",
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+  "C_Cpp.intelliSenseEngine": "default",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/cpp/include",
+    "${workspaceFolder}/target/linux-x64/debug/vcpkg_installed/x64-linux/include",
+    "${workspaceFolder}/target/linux-x64/release/vcpkg_installed/x64-linux/include",
+    "${workspaceFolder}/target/windows-x64/debug/vcpkg_installed/x64-windows/include",
+    "${workspaceFolder}/target/windows-x64/release/vcpkg_installed/x64-windows/include"
   ],
-  "rust-analyzer.checkOnSave": true,
-  "rust-analyzer.check.command": "clippy",
-  "rust-analyzer.cargo.allTargets": true,
-  "rust-analyzer.procMacro.enable": true,
-  "rust-analyzer.inlayHints.bindingModeHints.enable": true,
-  "rust-analyzer.inlayHints.closingBraceHints.minLines": 10,
-  "rust-analyzer.inlayHints.parameterHints.enable": true,
-  "rust-analyzer.inlayHints.typeHints.enable": true,
+  "C_Cpp.default.cppStandard": "c++20",
+  "C_Cpp.default.compilerPath": "/usr/bin/g++",
+  "clangd.enable": false,
+  "clangd.arguments": [
+    "--background-index",
+    "--clang-tidy",
+    "--query-driver=**/cl.exe,**/g++,**/clang++"
+  ],
+  "clangd.fallbackFlags": [
+    "-std=c++20",
+    "-I${workspaceFolder}/cpp/include",
+    "-I${workspaceFolder}/target/linux-x64/debug/vcpkg_installed/x64-linux/include",
+    "-I${workspaceFolder}/target/linux-x64/release/vcpkg_installed/x64-linux/include",
+    "-I${workspaceFolder}/target/windows-x64/debug/vcpkg_installed/x64-windows/include",
+    "-I${workspaceFolder}/target/windows-x64/release/vcpkg_installed/x64-windows/include"
+  ],
   "errorLens.enabled": true,
   "errorLens.messageEnabled": true,
-  "crates.updates.ignore": [
-    "reqwest"
-  ],
-  "[rust]": {
-    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  "[cpp]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools"
   },
   "[toml]": {
     "editor.defaultFormatter": "tamasfe.even-better-toml"
-  },
-  "cmake.ignoreCMakeListsMissing": true
+  }
 }

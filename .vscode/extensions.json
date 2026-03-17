@@ -1,9 +1,12 @@
 {
   "recommendations": [
-    "rust-lang.rust-analyzer",
+    "ms-vscode.cpptools",
+    "ms-vscode.cmake-tools",
     "vadimcn.vscode-lldb",
     "tamasfe.even-better-toml",
-    "usernamehw.errorlens",
-    "serayuzgur.crates"
+    "usernamehw.errorlens"
+  ],
+  "unwantedRecommendations": [
+    "llvm-vs-code-extensions.vscode-clangd"
   ]
 }

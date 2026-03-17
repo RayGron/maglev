@@ -2,56 +2,6 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Linux x64 Debug",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "Build: Linux x64 Debug"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Linux x64 Release",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "Build: Linux x64 Release"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Linux x64 Build Matrix",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "Build: Linux x64 Debug",
-        "Build: Linux x64 Release"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Windows x64 Debug",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "Build: Windows x64 Debug"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Windows x64 Release",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "Build: Windows x64 Release"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Windows x64 Build Matrix",
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "Build: Windows x64 Debug",
-        "Build: Windows x64 Release"
-      ],
-      "problemMatcher": []
-    },
-    {
       "label": "Build Matrix",
       "dependsOrder": "sequence",
       "dependsOn": [
@@ -68,13 +18,13 @@
       "command": "bash",
       "args": [
         "-lc",
-        "./scripts/build-linux.sh debug"
+        "rm -f target/linux-x64/debug/CMakeCache.txt && rm -rf target/linux-x64/debug/CMakeFiles && cmake --preset linux-x64-debug && cmake --build --preset linux-x64-debug"
       ],
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": "$rustc",
+      "problemMatcher": "$gcc",
       "options": {
         "cwd": "${workspaceFolder}"
       }
@@ -85,13 +35,13 @@
       "command": "bash",
       "args": [
         "-lc",
-        "./scripts/build-linux.sh release"
+        "rm -f target/linux-x64/release/CMakeCache.txt && rm -rf target/linux-x64/release/CMakeFiles && cmake --preset linux-x64-release && cmake --build --preset linux-x64-release"
       ],
       "group": {
         "kind": "build",
         "isDefault": false
       },
-      "problemMatcher": "$rustc",
+      "problemMatcher": "$gcc",
       "options": {
         "cwd": "${workspaceFolder}"
       }
@@ -102,19 +52,22 @@
       "command": "cmd.exe",
       "args": [
         "/C",
-        "scripts\\build-windows.cmd",
-        "debug"
+        "if exist target\\windows-x64\\debug\\CMakeCache.txt del /Q target\\windows-x64\\debug\\CMakeCache.txt >nul 2>nul & if exist target\\windows-x64\\debug\\CMakeFiles rmdir /S /Q target\\windows-x64\\debug\\CMakeFiles >nul 2>nul & cmake --preset windows-x64-debug && cmake --build --preset windows-x64-debug"
       ],
       "group": {
         "kind": "build",
         "isDefault": false
       },
-      "problemMatcher": "$rustc",
+      "problemMatcher": "$msCompile",
       "options": {
         "cwd": "${workspaceFolder}"
       },
       "linux": {
-        "command": "/mnt/c/Windows/System32/cmd.exe"
+        "command": "bash",
+        "args": [
+          "-lc",
+          "\"${MAGLEV_WINDOWS_CMD:-cmd.exe}\" /C \"if exist target\\windows-x64\\debug\\CMakeCache.txt del /Q target\\windows-x64\\debug\\CMakeCache.txt >nul 2>nul & if exist target\\windows-x64\\debug\\CMakeFiles rmdir /S /Q target\\windows-x64\\debug\\CMakeFiles >nul 2>nul & cmake --preset windows-x64-debug && cmake --build --preset windows-x64-debug\""
+        ]
       }
     },
     {
@@ -123,19 +76,22 @@
       "command": "cmd.exe",
       "args": [
         "/C",
-        "scripts\\build-windows.cmd",
-        "release"
+        "if exist target\\windows-x64\\release\\CMakeCache.txt del /Q target\\windows-x64\\release\\CMakeCache.txt >nul 2>nul & if exist target\\windows-x64\\release\\CMakeFiles rmdir /S /Q target\\windows-x64\\release\\CMakeFiles >nul 2>nul & cmake --preset windows-x64-release && cmake --build --preset windows-x64-release"
       ],
       "group": {
         "kind": "build",
         "isDefault": false
       },
-      "problemMatcher": "$rustc",
+      "problemMatcher": "$msCompile",
       "options": {
         "cwd": "${workspaceFolder}"
       },
       "linux": {
-        "command": "/mnt/c/Windows/System32/cmd.exe"
+        "command": "bash",
+        "args": [
+          "-lc",
+          "\"${MAGLEV_WINDOWS_CMD:-cmd.exe}\" /C \"if exist target\\windows-x64\\release\\CMakeCache.txt del /Q target\\windows-x64\\release\\CMakeCache.txt >nul 2>nul & if exist target\\windows-x64\\release\\CMakeFiles rmdir /S /Q target\\windows-x64\\release\\CMakeFiles >nul 2>nul & cmake --preset windows-x64-release && cmake --build --preset windows-x64-release\""
+        ]
       }
     }
   ]

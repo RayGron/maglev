@@ -1,1 +1,7 @@
 target/
+.maglev/
+compile_commands.json
+ai-cvsc-output.md
+copied-from-hello-session.txt
+Helloworld.txt
+nul
