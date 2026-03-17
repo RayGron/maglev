@@ -2,33 +2,140 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "CLI: Build Debug",
-      "type": "shell",
-      "command": "cargo build",
-      "group": "build",
+      "label": "Linux x64 Debug",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Build: Linux x64 Debug"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Linux x64 Release",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Build: Linux x64 Release"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Linux x64 Build Matrix",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Build: Linux x64 Debug",
+        "Build: Linux x64 Release"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Windows x64 Debug",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Build: Windows x64 Debug"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Windows x64 Release",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Build: Windows x64 Release"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Windows x64 Build Matrix",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Build: Windows x64 Debug",
+        "Build: Windows x64 Release"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Build Matrix",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Build: Linux x64 Debug",
+        "Build: Linux x64 Release",
+        "Build: Windows x64 Debug",
+        "Build: Windows x64 Release"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Build: Linux x64 Debug",
+      "type": "process",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "./scripts/build-linux.sh debug"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "problemMatcher": "$rustc",
       "options": {
         "cwd": "${workspaceFolder}"
       }
     },
     {
-      "label": "CLI: Build Release",
-      "type": "shell",
-      "command": "cargo build --release",
-      "group": "build",
+      "label": "Build: Linux x64 Release",
+      "type": "process",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "./scripts/build-linux.sh release"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
       "problemMatcher": "$rustc",
       "options": {
         "cwd": "${workspaceFolder}"
       }
     },
     {
-      "label": "CLI: Check",
-      "type": "shell",
-      "command": "cargo check",
-      "group": "test",
+      "label": "Build: Windows x64 Debug",
+      "type": "process",
+      "command": "cmd.exe",
+      "args": [
+        "/C",
+        "scripts\\build-windows.cmd",
+        "debug"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
       "problemMatcher": "$rustc",
       "options": {
         "cwd": "${workspaceFolder}"
+      },
+      "linux": {
+        "command": "/mnt/c/Windows/System32/cmd.exe"
+      }
+    },
+    {
+      "label": "Build: Windows x64 Release",
+      "type": "process",
+      "command": "cmd.exe",
+      "args": [
+        "/C",
+        "scripts\\build-windows.cmd",
+        "release"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": "$rustc",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "linux": {
+        "command": "/mnt/c/Windows/System32/cmd.exe"
       }
     }
   ]

@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "maglevDebugMode",
+      "type": "pickString",
+      "description": "Select the Maglev debug run mode",
+      "options": [
+        "Interactive",
+        "Task",
+        "File Task"
+      ],
+      "default": "Interactive"
+    }
+  ],
+  "configurations": [
+    {
+      "name": "Debug: Windows x64",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}\\target\\windows-x64\\debug\\maglev.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Build: Windows x64 Debug",
+      "env": {
+        "AI_CVSC_BACKEND_MODE": "openai_compat",
+        "AI_CVSC_RUNTIME_CONFIG_PATH": "${workspaceFolder}\\config\\model-endpoints.json",
+        "MAGLEV_DEBUG_MODE": "${input:maglevDebugMode}"
+      }
+    }
+  ]
+}

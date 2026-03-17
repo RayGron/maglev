@@ -257,13 +257,40 @@ impl OpenAiCompatGateway {
     }
 }
 
+fn repository_context_prompt(repository: &RepositoryContext) -> Result<String> {
+    let mut sections = vec![
+        format!(
+            "Repository metadata:\n{}",
+            serde_json::to_string_pretty(repository).context("failed to serialize repository context")?
+        ),
+    ];
+
+    if !repository.attached_files.is_empty() {
+        let attached_files = repository
+            .attached_files
+            .iter()
+            .map(|file| {
+                let truncation_note = if file.truncated { " (truncated)" } else { "" };
+                format!(
+                    "Attached file: {}{}\nContent:\n{}",
+                    file.path, truncation_note, file.content
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n\n");
+        sections.push(format!("Attached file contents:\n{attached_files}"));
+    }
+
+    Ok(sections.join("\n\n"))
+}
+
 impl AgentGateway for OpenAiCompatGateway {
     fn create_task_plan(&self, _run_id: &str, task: &str, repository: &RepositoryContext) -> Result<TaskPlanResponse> {
         self.chat_json(
             "Return JSON only. Schema: {\"summary\":string,\"steps\":[{\"id\":string,\"title\":string,\"kind\":string,\"requiresApproval\":boolean}]}. No markdown.",
             format!(
                 "Create an agent task plan for this task.\nTask: {task}\nRepository context:\n{}",
-                serde_json::to_string_pretty(repository).context("failed to serialize repository context")?
+                repository_context_prompt(repository)?
             ),
         )
     }
@@ -273,7 +300,7 @@ impl AgentGateway for OpenAiCompatGateway {
             "Return JSON only. Schema: [{\"path\":string,\"content\":string,\"summary\":string}]. If unsure, create or update a small markdown file that summarizes the requested task. No markdown fences.",
             format!(
                 "Propose local file edits for this task.\nTask: {task}\nRepository context:\n{}",
-                serde_json::to_string_pretty(repository).context("failed to serialize repository context")?
+                repository_context_prompt(repository)?
             ),
         )
     }
@@ -290,7 +317,7 @@ impl AgentGateway for OpenAiCompatGateway {
             "Return JSON only. Schema: {\"host\":string,\"repoPath\":string,\"branch\":string,\"restartCommand\":string|null}. Extract the target host from the instruction if present, otherwise keep the current repository path and branch.",
             format!(
                 "Create a deploy request.\nInstruction: {instruction}\nRepository context:\n{}",
-                serde_json::to_string_pretty(repository).context("failed to serialize repository context")?
+                repository_context_prompt(repository)?
             ),
         )
     }

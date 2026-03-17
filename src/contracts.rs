@@ -61,10 +61,19 @@ pub struct TerminalReply {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AttachedFileContext {
+    pub path: String,
+    pub content: String,
+    pub truncated: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RepositoryContext {
     pub root_path: String,
     pub branch: String,
     pub changed_files: Vec<String>,
+    pub attached_files: Vec<AttachedFileContext>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

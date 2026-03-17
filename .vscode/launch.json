@@ -1,25 +1,87 @@
 {
   "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "maglevDebugMode",
+      "type": "pickString",
+      "description": "Select the Maglev debug run mode",
+      "options": [
+        "Interactive",
+        "Task",
+        "File Task"
+      ],
+      "default": "Interactive"
+    }
+  ],
   "configurations": [
     {
-      "name": "Debug Maglev CLI",
+      "name": "Build: Linux x64 Debug",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "bash -lc 'cd \"${workspaceFolder}\" && ./scripts/build-linux.sh debug'"
+    },
+    {
+      "name": "Build: Linux x64 Release",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "bash -lc 'cd \"${workspaceFolder}\" && ./scripts/build-linux.sh release'"
+    },
+    {
+      "name": "Build: Windows x64 Debug",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "bash -lc 'cd \"${workspaceFolder}\" && /mnt/c/Windows/System32/cmd.exe /C scripts\\\\build-windows.cmd debug'"
+    },
+    {
+      "name": "Build: Windows x64 Release",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "bash -lc 'cd \"${workspaceFolder}\" && /mnt/c/Windows/System32/cmd.exe /C scripts\\\\build-windows.cmd release'"
+    },
+    {
+      "name": "Debug: Windows x64",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "bash -lc 'cd \"${workspaceFolder}\" && /mnt/c/Windows/System32/cmd.exe /C scripts\\\\build-windows.cmd debug && /mnt/c/Windows/System32/cmd.exe /C target\\\\windows-x64\\\\debug\\\\maglev.exe'"
+    },
+    {
+      "name": "Build Matrix",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "bash -lc 'cd \"${workspaceFolder}\" && ./scripts/build-linux.sh debug && ./scripts/build-linux.sh release && /mnt/c/Windows/System32/cmd.exe /C scripts\\\\build-windows.cmd debug && /mnt/c/Windows/System32/cmd.exe /C scripts\\\\build-windows.cmd release'"
+    },
+    {
+      "name": "Debug: Linux x64",
       "type": "lldb",
       "request": "launch",
-      "cargo": {
-        "args": [
-          "build"
-        ],
-        "filter": {
-          "name": "maglev",
-          "kind": "bin"
-        }
-      },
+      "program": "${workspaceFolder}/target/linux-x64/debug/maglev",
       "args": [],
       "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Build: Linux x64 Debug",
+      "terminal": "integrated",
       "env": {
         "AI_CVSC_BACKEND_MODE": "openai_compat",
-        "AI_CVSC_RUNTIME_CONFIG_PATH": "${workspaceFolder}/config/model-endpoints.json"
+        "AI_CVSC_RUNTIME_CONFIG_PATH": "${workspaceFolder}/config/model-endpoints.json",
+        "MAGLEV_DEBUG_MODE": "${input:maglevDebugMode}"
       }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Build: Linux x64",
+      "configurations": [
+        "Build: Linux x64 Debug",
+        "Build: Linux x64 Release"
+      ],
+      "stopAll": true
+    },
+    {
+      "name": "Build: Windows x64",
+      "configurations": [
+        "Build: Windows x64 Debug",
+        "Build: Windows x64 Release"
+      ],
+      "stopAll": true
     }
   ]
 }
