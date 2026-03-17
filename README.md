@@ -122,6 +122,12 @@ Toolchain:
 
 Dependencies are installed automatically through `vcpkg` during configure/build.
 
+Linux build prerequisites:
+
+- `zip`
+- `unzip`
+- `pkg-config`
+
 ## VS Code
 
 Workspace tasks:
@@ -167,6 +173,7 @@ Expected environment:
 
 - `cmake` in `PATH`
 - `vcpkg` available through `VCPKG_ROOT`, `PATH`, or a sibling checkout
+- on Linux: `zip`, `unzip`, and `pkg-config` available in the system environment
 
 ## Status
 
