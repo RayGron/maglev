@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Maglev CLI",
+      "type": "lldb",
+      "request": "launch",
+      "cargo": {
+        "args": [
+          "build"
+        ],
+        "filter": {
+          "name": "maglev",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "AI_CVSC_BACKEND_MODE": "openai_compat",
+        "AI_CVSC_RUNTIME_CONFIG_PATH": "${workspaceFolder}/config/model-endpoints.json"
+      }
+    }
+  ]
+}
