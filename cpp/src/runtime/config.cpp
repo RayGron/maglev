@@ -93,6 +93,21 @@ std::string infer_native_chat_api_url(const std::string& api_base_url) {
     return derived + "/api/v1/chat";
 }
 
+std::optional<std::filesystem::path> resolve_runtime_config_path(
+    const std::optional<std::filesystem::path>& explicit_path,
+    const std::filesystem::path& workspace_root) {
+    if (explicit_path && !explicit_path->empty()) {
+        return *explicit_path;
+    }
+
+    const auto workspace_config = workspace_root / "config" / "model-endpoints.json";
+    if (std::filesystem::exists(workspace_config)) {
+        return workspace_config;
+    }
+
+    return std::nullopt;
+}
+
 }  // namespace
 
 bool env_flag(const std::string& name) {
@@ -105,17 +120,13 @@ std::string getenv_or_empty(const std::string& name) {
     return value == nullptr ? std::string() : std::string(value);
 }
 
-GatewayConfig GatewayConfig::from_environment() {
+GatewayConfig GatewayConfig::from_environment(const std::optional<std::filesystem::path>& config_path) {
     GatewayConfig config;
     config.workspace_root = std::filesystem::current_path();
 
     nlohmann::json runtime = nlohmann::json::object();
-    auto config_path = config.workspace_root / "config" / "model-endpoints.json";
-    if (const auto runtime_path = env_optional("AI_CVSC_RUNTIME_CONFIG_PATH")) {
-        config_path = std::filesystem::path(*runtime_path);
-    }
-    if (std::filesystem::exists(config_path)) {
-        runtime = nlohmann::json::parse(read_text_file(config_path), nullptr, false);
+    if (const auto resolved_config_path = resolve_runtime_config_path(config_path, config.workspace_root)) {
+        runtime = nlohmann::json::parse(read_text_file(*resolved_config_path), nullptr, false);
         if (runtime.is_discarded()) {
             runtime = nlohmann::json::object();
         }

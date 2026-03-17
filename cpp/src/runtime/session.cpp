@@ -159,6 +159,35 @@ const std::vector<std::string>& SessionState::attached_files() const {
     return attached_files_;
 }
 
+const std::vector<MountedPathContext>& SessionState::mounted_paths() const {
+    return mounted_paths_;
+}
+
+void SessionState::mount_path(const MountedPathContext& mounted_path) {
+    const auto existing = std::find_if(mounted_paths_.begin(), mounted_paths_.end(), [&](const MountedPathContext& current) {
+        return current.path == mounted_path.path;
+    });
+    if (existing != mounted_paths_.end()) {
+        const auto preserved_loaded_files = mounted_path.loaded_files.empty() ? existing->loaded_files : mounted_path.loaded_files;
+        *existing = mounted_path;
+        existing->loaded_files = preserved_loaded_files;
+        return;
+    }
+    mounted_paths_.push_back(mounted_path);
+}
+
+void SessionState::update_mounted_path_loaded_files(
+    const std::string& path,
+    const std::vector<AttachedFileContext>& loaded_files) {
+    const auto existing = std::find_if(mounted_paths_.begin(), mounted_paths_.end(), [&](const MountedPathContext& current) {
+        return current.path == path;
+    });
+    if (existing == mounted_paths_.end()) {
+        return;
+    }
+    existing->loaded_files = loaded_files;
+}
+
 const RunSnapshot* SessionState::active_run() const {
     return active_run_ ? &*active_run_ : nullptr;
 }

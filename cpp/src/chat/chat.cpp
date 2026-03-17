@@ -50,6 +50,41 @@ std::string make_local_terminal_reply(const TaskPlanResponse& plan) {
     return "Подготовка завершена.";
 }
 
+Json build_chat_details(
+    const std::filesystem::path& workspace_root,
+    const std::vector<std::string>& attached_files,
+    const std::vector<MountedPathContext>& mounted_paths,
+    bool include_loaded_file_content) {
+    Json details = {
+        {"mode", "chat"},
+        {"platform", platform_name()},
+        {"compiler", compiler_name()},
+        {"workspaceRoot", workspace_root.string()},
+    };
+
+    if (!attached_files.empty()) {
+        details["attachedFiles"] = chat_detail::load_attached_file_context(workspace_root, attached_files);
+    }
+
+    if (!mounted_paths.empty()) {
+        Json mounted = Json::array();
+        for (const auto& mounted_path : mounted_paths) {
+            Json entry = {
+                {"path", mounted_path.path},
+                {"isDirectory", mounted_path.is_directory},
+                {"tree", mounted_path.tree},
+            };
+            if (include_loaded_file_content && !mounted_path.loaded_files.empty()) {
+                entry["loadedFiles"] = mounted_path.loaded_files;
+            }
+            mounted.push_back(std::move(entry));
+        }
+        details["mountedPaths"] = std::move(mounted);
+    }
+
+    return details;
+}
+
 TaskPlanResponse make_commit_plan() {
     return make_local_plan(
         "Подготовить и выполнить git commit для текущих изменений.",
@@ -231,12 +266,19 @@ void run_terminal_chat_reply(
     AgentGateway& gateway,
     const std::filesystem::path& workspace_root,
     const std::vector<std::string>& attached_files,
+    const std::vector<MountedPathContext>& mounted_paths,
     const std::string& task,
+    bool include_loaded_file_content,
     SessionLogger* logger) {
     log_event(
         logger,
         "chat.prompt",
-        Json{{"task", task}, {"attachedFiles", attached_files}, {"workspaceRoot", workspace_root.string()}});
+        Json{
+            {"task", task},
+            {"attachedFiles", attached_files},
+            {"mountedPaths", mounted_paths},
+            {"workspaceRoot", workspace_root.string()},
+        });
     if (chat_detail::looks_like_identity_question(task)) {
         std::cout << "Я терминальный ассистент для работы с кодом.\n";
         log_event(logger, "chat.reply", Json{{"message", "Я терминальный ассистент для работы с кодом."}});
@@ -251,11 +293,7 @@ void run_terminal_chat_reply(
         return;
     }
 
-    Json details = {
-        {"mode", "chat"},
-        {"platform", platform_name()},
-        {"compiler", compiler_name()},
-    };
+    auto details = build_chat_details(workspace_root, attached_files, mounted_paths, include_loaded_file_content);
     if (gateway_detail::is_model_question(task)) {
         const auto started_at = std::chrono::steady_clock::now();
         const auto reply = gateway.terminal_reply(make_run_id(), task, details);
@@ -265,15 +303,75 @@ void run_terminal_chat_reply(
         return;
     }
 
-    const auto context_started_at = std::chrono::steady_clock::now();
-    details["attachedFiles"] = chat_detail::load_attached_file_context(workspace_root, attached_files);
-    log_timing("chat.load_attached_files", std::chrono::steady_clock::now() - context_started_at);
-
     const auto reply_started_at = std::chrono::steady_clock::now();
     const auto reply = gateway.terminal_reply(make_run_id(), task, details);
     log_timing("chat.reply", std::chrono::steady_clock::now() - reply_started_at);
     std::cout << reply.message << '\n';
     log_event(logger, "chat.reply", Json{{"message", reply.message}});
+}
+
+bool mount_path_from_input(
+    const std::filesystem::path& workspace_root,
+    const std::string& input,
+    SessionState& session,
+    SessionLogger* logger) {
+    const auto raw_path = chat_detail::extract_path_reference(input);
+    if (!raw_path) {
+        return false;
+    }
+
+    const auto mounted_path = chat_detail::mount_user_path(workspace_root, *raw_path);
+    session.mount_path(mounted_path);
+    log_event(logger, "session.path_mounted", Json(mounted_path));
+    std::cout << chat_detail::describe_mounted_path(mounted_path) << '\n';
+    std::cout << "Path is available for the rest of this session. Ask me to read or summarize file contents when needed.\n";
+    return true;
+}
+
+bool handle_mounted_path_content_request(
+    AgentGateway& gateway,
+    const std::filesystem::path& workspace_root,
+    const std::string& input,
+    SessionState& session,
+    SessionLogger* logger) {
+    const auto has_path_reference = chat_detail::extract_path_reference(input).has_value();
+    const bool wants_content = chat_detail::looks_like_file_content_request(input);
+    if (!wants_content) {
+        return false;
+    }
+    if (!has_path_reference && session.mounted_paths().empty()) {
+        return false;
+    }
+
+    if (has_path_reference) {
+        const auto mounted_path = chat_detail::mount_user_path(workspace_root, *chat_detail::extract_path_reference(input));
+        session.mount_path(mounted_path);
+        log_event(logger, "session.path_mounted", Json(mounted_path));
+    }
+
+    const auto load_started_at = std::chrono::steady_clock::now();
+    for (const auto& mounted_path : session.mounted_paths()) {
+        if (!mounted_path.loaded_files.empty()) {
+            continue;
+        }
+        const auto loaded_files = chat_detail::load_mounted_path_content(workspace_root, mounted_path);
+        session.update_mounted_path_loaded_files(mounted_path.path, loaded_files);
+        log_event(
+            logger,
+            "session.path_content_loaded",
+            Json{{"path", mounted_path.path}, {"loadedFiles", loaded_files}, {"count", loaded_files.size()}});
+    }
+    log_timing("chat.load_mounted_path_content", std::chrono::steady_clock::now() - load_started_at);
+
+    run_terminal_chat_reply(
+        gateway,
+        workspace_root,
+        session.attached_files(),
+        session.mounted_paths(),
+        input,
+        true,
+        logger);
+    return true;
 }
 
 void run_local_uncommitted_changes_task(
@@ -302,7 +400,7 @@ void prepare_agent_run(
     SessionState& session,
     SessionLogger* logger) {
     const auto repository_started_at = std::chrono::steady_clock::now();
-    const auto repository = chat_detail::load_repository_context(workspace_root, session.attached_files());
+    const auto repository = chat_detail::load_repository_context(workspace_root, session.attached_files(), session.mounted_paths());
     log_timing("agent.load_repository_context", std::chrono::steady_clock::now() - repository_started_at);
     const auto run_id = make_run_id();
     session.begin_run(run_id, task, session.attached_files());
@@ -565,7 +663,7 @@ void run_chat_session_inner(
     SessionState& session,
     SessionLogger* logger) {
     const auto repository_started_at = std::chrono::steady_clock::now();
-    const auto repository = chat_detail::load_repository_context(workspace_root, input.attached_files);
+    const auto repository = chat_detail::load_repository_context(workspace_root, input.attached_files, session.mounted_paths());
     log_timing("run.load_repository_context", std::chrono::steady_clock::now() - repository_started_at);
     const auto run_id = make_run_id();
     session.begin_run(run_id, input.task, input.attached_files);
@@ -737,7 +835,14 @@ void run_one_shot_input(
         return;
     }
 
-    run_terminal_chat_reply(gateway, std::filesystem::path(workspace_root), input.attached_files, input.task, logger);
+    run_terminal_chat_reply(
+        gateway,
+        std::filesystem::path(workspace_root),
+        input.attached_files,
+        {},
+        input.task,
+        false,
+        logger);
 }
 
 void run_chat_session(
@@ -906,11 +1011,25 @@ void run_interactive_session(
                 }
             }
 
+            if (handle_mounted_path_content_request(gateway, workspace_path, trimmed, session, logger)) {
+                continue;
+            }
+            if (mount_path_from_input(workspace_path, trimmed, session, logger)) {
+                continue;
+            }
+
             if (chat_detail::infer_user_intent(trimmed) == chat_detail::UserIntent::AgentTask) {
                 std::cout << "Detected agent task intent. Running agent workflow. Use /task to force this behavior explicitly.\n";
                 prepare_or_execute_agent_input(gateway, workspace_path, trimmed, session, logger);
             } else {
-                run_terminal_chat_reply(gateway, workspace_path, session.attached_files(), trimmed, logger);
+                run_terminal_chat_reply(
+                    gateway,
+                    workspace_path,
+                    session.attached_files(),
+                    session.mounted_paths(),
+                    trimmed,
+                    false,
+                    logger);
             }
         } catch (const std::exception& error) {
             if (session.active_run() != nullptr) {

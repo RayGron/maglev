@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <stdexcept>
@@ -13,10 +14,59 @@ namespace {
 struct CliArguments {
     maglev::TaskInput input;
     bool auto_approve = false;
-    std::optional<std::string> runtime_config_path;
+    std::optional<std::filesystem::path> runtime_config_path;
     std::optional<std::string> backend_mode;
     std::optional<std::string> model;
 };
+
+std::filesystem::path resolve_executable_path(const char* argv0) {
+    if (argv0 == nullptr || std::string(argv0).empty()) {
+        return std::filesystem::current_path();
+    }
+
+    auto executable_path = std::filesystem::path(argv0);
+    if (executable_path.is_absolute()) {
+        return executable_path.lexically_normal();
+    }
+    if (executable_path.has_parent_path()) {
+        return std::filesystem::absolute(executable_path).lexically_normal();
+    }
+    if (const auto from_path = maglev::find_program_on_path(executable_path.string())) {
+        return from_path->lexically_normal();
+    }
+    return std::filesystem::absolute(executable_path).lexically_normal();
+}
+
+std::optional<std::filesystem::path> resolve_runtime_config_path(
+    const CliArguments& arguments,
+    [[maybe_unused]] const std::filesystem::path& executable_path) {
+    if (arguments.runtime_config_path) {
+        return arguments.runtime_config_path;
+    }
+
+#ifdef _WIN32
+    const auto executable_directory_config = executable_path.parent_path() / "model-endpoints.json";
+    if (std::filesystem::exists(executable_directory_config)) {
+        return executable_directory_config;
+    }
+#else
+    const auto xdg_config_home = maglev::getenv_or_empty("XDG_CONFIG_HOME");
+    const auto linux_config = !maglev::trim(xdg_config_home).empty()
+                                  ? std::filesystem::path(xdg_config_home) / "maglev" / "model-endpoints.json"
+                                  : std::filesystem::path(maglev::getenv_or_empty("HOME")) / ".config" / "maglev" /
+                                        "model-endpoints.json";
+    if (std::filesystem::exists(linux_config)) {
+        return linux_config;
+    }
+#endif
+
+    const auto workspace_config = std::filesystem::current_path() / "config" / "model-endpoints.json";
+    if (std::filesystem::exists(workspace_config)) {
+        return workspace_config;
+    }
+
+    return std::nullopt;
+}
 
 std::string normalize_debug_mode(std::string mode) {
     for (char& ch : mode) {
@@ -91,9 +141,9 @@ CliArguments parse_cli_input(int argc, char** argv) {
             arguments.auto_approve = true;
             continue;
         }
-        if (arg == "--config") {
+        if (arg == "--config-file" || arg == "-c" || arg == "--config") {
             if (index + 1 >= argc) {
-                throw std::runtime_error("--config requires a path");
+                throw std::runtime_error(std::string(arg) + " requires a path");
             }
             arguments.runtime_config_path = argv[++index];
             continue;
@@ -133,9 +183,8 @@ CliArguments parse_cli_input(int argc, char** argv) {
 int main(int argc, char** argv) {
     try {
         const auto arguments = parse_cli_input(argc, argv);
-        if (arguments.runtime_config_path) {
-            maglev::set_process_env("AI_CVSC_RUNTIME_CONFIG_PATH", *arguments.runtime_config_path);
-        }
+        const auto executable_path = resolve_executable_path(argc > 0 ? argv[0] : nullptr);
+        const auto runtime_config_path = resolve_runtime_config_path(arguments, executable_path);
         if (arguments.backend_mode) {
             maglev::set_process_env("AI_CVSC_BACKEND_MODE", *arguments.backend_mode);
         }
@@ -147,7 +196,7 @@ int main(int argc, char** argv) {
             maglev::set_process_env("AI_CVSC_AUTO_APPROVE", "1");
         }
 
-        const auto config = maglev::GatewayConfig::from_environment();
+        const auto config = maglev::GatewayConfig::from_environment(runtime_config_path);
         const auto auto_approve = maglev::env_flag("AI_CVSC_AUTO_APPROVE");
         auto gateway = maglev::make_gateway(config);
         // Transcript/audit file creation is intentionally disabled.

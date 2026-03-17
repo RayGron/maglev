@@ -115,6 +115,16 @@ void print_session_status(const SessionState& session) {
             std::cout << "  - " << file << '\n';
         }
     }
+    if (!session.mounted_paths().empty()) {
+        std::cout << "- mounted paths:\n";
+        for (const auto& mounted_path : session.mounted_paths()) {
+            std::cout << "  - " << mounted_path.path << " [" << (mounted_path.is_directory ? "directory" : "file") << "]";
+            if (!mounted_path.loaded_files.empty()) {
+                std::cout << " loaded=" << mounted_path.loaded_files.size();
+            }
+            std::cout << '\n';
+        }
+    }
     if (const auto* active = session.active_run()) {
         print_run_snapshot("Active run", *active);
     }

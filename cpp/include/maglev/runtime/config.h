@@ -44,7 +44,7 @@ struct GatewayConfig {
     bool use_mock_gateway = false;
     std::filesystem::path workspace_root;
 
-    static GatewayConfig from_environment();
+    static GatewayConfig from_environment(const std::optional<std::filesystem::path>& config_path = std::nullopt);
 };
 
 bool env_flag(const std::string& name);

@@ -92,6 +92,17 @@ bool looks_like_push_request(const std::string& input) {
     return contains_any(trimmed, markers) || contains_any(lowered, markers);
 }
 
+bool looks_like_file_content_request(const std::string& input) {
+    const auto trimmed = trim(input);
+    const auto lowered = to_lower(trimmed);
+    static const std::vector<std::string> markers = {
+        "прочитай файлы", "прочитай содержимое", "содержимое файлов", "резюме содержимого", "краткое резюме",
+        "сделай резюме", "сделай краткое резюме", "проанализируй содержимое", "summarize contents",
+        "summarize files", "read the files", "read file contents", "summarize the contents",
+    };
+    return contains_any(trimmed, markers) || contains_any(lowered, markers);
+}
+
 UserIntent infer_user_intent(const std::string& input) {
     const auto lowered = to_lower(trim(input));
     if (lowered.empty()) {

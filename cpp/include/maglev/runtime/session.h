@@ -78,6 +78,9 @@ class SessionState {
     void add_attached_file(const std::string& path);
     void clear_attached_files();
     const std::vector<std::string>& attached_files() const;
+    const std::vector<MountedPathContext>& mounted_paths() const;
+    void mount_path(const MountedPathContext& mounted_path);
+    void update_mounted_path_loaded_files(const std::string& path, const std::vector<AttachedFileContext>& loaded_files);
     const RunSnapshot* active_run() const;
     const RunSnapshot* last_run() const;
     void begin_run(const std::string& run_id, const std::string& task, const std::vector<std::string>& attached_files);
@@ -103,6 +106,7 @@ class SessionState {
     void archive_active_run();
 
     std::vector<std::string> attached_files_;
+    std::vector<MountedPathContext> mounted_paths_;
     std::optional<std::string> last_task_;
     std::size_t completed_runs_ = 0;
     std::optional<RunSnapshot> active_run_;
