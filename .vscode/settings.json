@@ -20,7 +20,6 @@
     "${workspaceFolder}/target/windows-x64/release/vcpkg_installed/x64-windows/include"
   ],
   "C_Cpp.default.cppStandard": "c++20",
-  "C_Cpp.default.compilerPath": "/usr/bin/g++",
   "clangd.enable": false,
   "clangd.arguments": [
     "--background-index",
